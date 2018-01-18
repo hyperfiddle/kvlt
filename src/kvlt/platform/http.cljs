@@ -47,19 +47,21 @@
   (let [request! (js/require "request")]
     (defn request-node! [req]
       (p/promise
-       (fn [resolve _]
+       (fn [resolve reject]
          (let [respond (comp resolve #(->response req %))]
            (request!
             (clj->js (req->node req))
             (fn [error node-resp buffer]
               (if error
                 (respond (error->map error))
-                (let [headers (js->clj (.. node-resp -headers) :keywordize-keys true)
-                      resp    {:headers headers
-                               :status  (.. node-resp -statusCode)
-                               :body    (maybe-encode buffer (req :as) headers)}]
-                  (log/debug "Received response\n" (util/pprint-str resp))
-                  (respond resp)))))))))))
+                (try
+                  (let [headers (js->clj (.. node-resp -headers) :keywordize-keys true)
+                        resp {:headers headers
+                              :status (.. node-resp -statusCode)
+                              :body (maybe-encode buffer (req :as) headers)}]
+                    (log/debug "Received response\n" (util/pprint-str resp))
+                    (respond resp))
+                  (catch js/Error e (reject e))))))))))))
 
 (defn request! [req]
   (log/debug "Issuing request\n" (util/pprint-str req))
