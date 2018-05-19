@@ -31,6 +31,7 @@
       {:uri      (compose-url req)
        :method   (-> req :request-method name str/upper-case)
        :headers  (req :headers)
+       :auth     (req :auth)
        :encoding nil
        :gzip     true}
     body      (assoc :body body)
